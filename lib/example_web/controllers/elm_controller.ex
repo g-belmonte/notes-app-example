@@ -1,4 +1,4 @@
-defmodule ExampleWeb.PageController do
+defmodule ExampleWeb.ElmController do
   use ExampleWeb, :controller
 
   def index(conn, _params) do

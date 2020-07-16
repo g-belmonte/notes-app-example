@@ -13,3 +13,10 @@ import "../css/app.scss"
 //     import socket from "./socket"
 //
 import "phoenix_html"
+
+// Elm
+import { Elm } from "../elm/src/Main.elm"
+
+let app = Elm.Main.init({
+  node: document.getElementById("app-node")
+})
