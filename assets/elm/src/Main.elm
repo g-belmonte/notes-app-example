@@ -1,7 +1,8 @@
 module Main exposing (Model, init, Msg, update, view, subscriptions)
 
 import Html exposing (..)
-import Html.Attributes exposing (class, href)
+import Html.Attributes exposing (class)
+import Html.Events exposing (onClick)
 import Http
 import Browser
 import Browser.Navigation as Nav
@@ -53,6 +54,8 @@ loadNotes =
 
 type Msg
     = LoadNotes (Result Http.Error (List Note))
+    | DeleteNote Int
+    | DeletedNote (Result Http.Error ())
     | UrlRequested Browser.UrlRequest
     | UrlChanged Url.Url
 
@@ -70,6 +73,27 @@ update msg model =
             ( model
             , Cmd.none
             )
+
+
+        DeletedNote _ ->
+            ( model
+            , Cmd.none
+            )
+
+
+        DeleteNote id ->
+            ( model
+            , Http.request
+                { method = "DELETE"
+                , headers = []
+                , url = apiUrl ++ "/notes/" ++ String.fromInt id
+                , body = Http.emptyBody
+                , expect = Http.expectWhatever DeletedNote
+                , timeout = Nothing
+                , tracker = Nothing
+                }
+            )
+
 
         UrlRequested urlRequest ->
             case urlRequest of
@@ -124,9 +148,9 @@ viewNote note =
                     , p [ class "card-content" ] [ text note.content ]
                     ]
               , div [class "card-action"]
-                  [ a [ class "btn-flat btn-small waves-effect waves-light waves-grey right", href "#" ]
+                  [ div [ class "btn-flat btn-small waves-effect waves-light waves-grey right", onClick (DeleteNote note.id) ]
                         [ i [ class "material-icons small grey-text text-darken-2" ] [ text "delete" ] ]
-                  , a [ class "btn-flat btn-small waves-effect waves-light waves-grey right", href "#" ]
+                  , div [ class "btn-flat btn-small waves-effect waves-light waves-grey right" ]
                         [ i [ class "material-icons small grey-text text-darken-2" ] [ text "edit" ] ]
                   ]
               ]
