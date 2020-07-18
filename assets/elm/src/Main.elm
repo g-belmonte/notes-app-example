@@ -1,7 +1,7 @@
 module Main exposing (Model, init, Msg, update, view, subscriptions)
 
 import Html exposing (..)
-import Html.Attributes exposing (class)
+import Html.Attributes exposing (class, href)
 import Http
 import Browser
 import Browser.Navigation as Nav
@@ -94,8 +94,8 @@ view : Model -> Browser.Document Msg
 view model =
     { title = "Application Title"
     , body =
-        [ div [class "row"]
-              [ div [class "col s12 l8 offset-l2"]
+        [ div [ class "row" ]
+              [ div [ class "col s12 l8 offset-l2" ]
                     [ viewNoteList model.notes ]
               ]
         ]
@@ -106,22 +106,28 @@ viewNoteList : Maybe (List Note) -> Html Msg
 viewNoteList notes =
     case notes of
         Nothing ->
-            h5 [class "center-align"] [text "Loading"]
+            h5 [ class "center-align" ] [ text "Loading" ]
 
         Just [] ->
-            h5 [class "center-align"] [text "There's nothing around here."]
+            h5 [ class "center-align" ] [ text "There's nothing around here." ]
 
         Just noteList ->
-            div [class "row"] (List.map viewNote noteList)
+            div [ class "row" ] (List.map viewNote noteList)
 
 
 viewNote : Note -> Html Msg
 viewNote note =
-    div [class "col s6 m4 l3"]
-        [ div [class "card small grey lighten-2 hoverable"]
-              [ div [class "card-content"]
-                    [ span [class "card-title center-align"] [text note.title]
-                    , p [class "card-content"] [text note.content]
+    div [ class "col s6 m4 l3" ]
+        [ div [ class "card small grey lighten-2 hoverable" ]
+              [ div [ class "card-content" ]
+                    [ span [ class "card-title center-align" ] [ text note.title ]
+                    , p [ class "card-content" ] [ text note.content ]
                     ]
+              , div [class "card-action"]
+                  [ a [ class "btn-flat btn-small waves-effect waves-light waves-grey right", href "#" ]
+                        [ i [ class "material-icons small grey-text text-darken-2" ] [ text "delete" ] ]
+                  , a [ class "btn-flat btn-small waves-effect waves-light waves-grey right", href "#" ]
+                        [ i [ class "material-icons small grey-text text-darken-2" ] [ text "edit" ] ]
+                  ]
               ]
         ]
