@@ -22,6 +22,12 @@ defmodule ExampleWeb.Router do
     end
   end
 
+  scope "/api" do
+    pipe_through :api
+
+    resources "/notes", ExampleWeb.NoteController, except: [:edit, :new]
+  end
+
   scope "/", ExampleWeb do
     pipe_through :browser
 
