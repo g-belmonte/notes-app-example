@@ -50,9 +50,13 @@ defmodule Example.Notes do
 
   """
   def create_note(attrs \\ %{}) do
-    %Note{}
-    |> Note.changeset(attrs)
-    |> Repo.insert()
+    {:ok, model} =
+      %Note{}
+      |> Note.changeset(attrs)
+      |> Repo.insert()
+
+    ExampleWeb.Endpoint.broadcast("notes:lobby", "update", %{content: attrs["content"], id: model.id, title: attrs["title"]})
+    {:ok, model}
   end
 
   @doc """

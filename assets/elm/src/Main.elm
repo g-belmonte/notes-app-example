@@ -209,9 +209,9 @@ update msg model =
                 , state = NoteList
               }
             , Http.request
-                { method = "PATCH"
+                { method = if id == 0 then "POST" else "PATCH"
                 , headers = []
-                , url = apiUrl ++ "/notes/" ++ String.fromInt id
+                , url = apiUrl ++ "/notes/" ++ (if id == 0 then "" else String.fromInt id)
                 , body =
                     Http.jsonBody
                         (E.object
@@ -279,7 +279,7 @@ view model =
                         viewNoteEdit id model.draftNote
 
                     NoteNew ->
-                        Debug.todo "new note"
+                        viewNoteEdit 0 model.draftNote
                 ]
             ]
         ]
@@ -288,15 +288,26 @@ view model =
 
 viewNoteList : Maybe (List Note) -> Html Msg
 viewNoteList notes =
-    case notes of
+    let
+        addBtn =
+            div [ class "btn-floating btn-large waves-effect waves-light right", onClick (EditNote 0) ]
+                [ i [ class "material-icons" ] [ text "add" ] ]
+    in
+        case notes of
         Nothing ->
-            h5 [ class "center-align" ] [ text "Loading" ]
+            div [ class "row" ]
+                [ h5 [ class "center-align" ] [ text "Loading" ]
+                , addBtn
+                ]
 
         Just [] ->
-            h5 [ class "center-align" ] [ text "There's nothing around here." ]
+            div [ class "row" ]
+                [ h5 [ class "center-align" ] [ text "There's nothing around here." ]
+                , addBtn
+                ]
 
         Just noteList ->
-            div [ class "row" ] (List.map viewNote noteList)
+            div [ class "row" ] (List.map viewNote noteList ++ List.singleton addBtn)
 
 
 viewNote : Note -> Html Msg
