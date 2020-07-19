@@ -11,12 +11,12 @@ import Browser
 import Browser.Navigation as Nav
 import Channel
 import Html exposing (..)
-import Html.Attributes exposing (class, id, for, type_, value)
+import Html.Attributes exposing (class, for, id, type_, value)
 import Html.Events exposing (onClick, onInput)
 import Http
-import Json.Decode exposing (decodeValue, field, int)
+import Json.Decode exposing (decodeValue, field, int, string)
 import Json.Encode as E
-import Note exposing (DraftNote, Note, emptyDraftNote, notesDecoder, updateDraftTitle, updateDraftContent)
+import Note exposing (DraftNote, Note, emptyDraftNote, noteDecoder, notesDecoder, updateDraftContent, updateDraftTitle)
 import Ports.Phoenix as Phx
 import Socket
 import Url
@@ -120,7 +120,9 @@ update msg model =
             ( model
             , Channel.eventsOn
                 (Just "notes:lobby")
-                [ "delete" ]
+                [ "delete"
+                , "update"
+                ]
                 Phx.sendMessage
             )
 
@@ -140,6 +142,20 @@ update msg model =
                 Err _ ->
                     ( model, Cmd.none )
 
+        ChannelMsg (Channel.Message "notes:lobby" "update" payload) ->
+            let
+                newNote =
+                    Result.withDefault (Note 0 "" "") <| decodeValue noteDecoder payload
+
+                noteList =
+                    List.filter (\x -> x.id /= newNote.id) <| Maybe.withDefault [] model.notes
+            in
+            ( { model
+                | notes = Just (newNote :: noteList)
+              }
+            , Cmd.none
+            )
+
         DeleteNote id ->
             ( model
             , Http.request
@@ -155,41 +171,42 @@ update msg model =
 
         EditNote id ->
             let
-                note = Maybe.withDefault (Note 0 "" "") <| (List.head << List.filter (\n -> n.id == id)) <| Maybe.withDefault [] model.notes
+                note =
+                    Maybe.withDefault (Note 0 "" "") <| (List.head << List.filter (\n -> n.id == id)) <| Maybe.withDefault [] model.notes
             in
-                ( { model
-                      | state = NoteEdit note.id
-                      , draftNote = DraftNote note.title note.content
-                  }
-                , Cmd.none
-                )
+            ( { model
+                | state = NoteEdit note.id
+                , draftNote = DraftNote note.title note.content
+              }
+            , Cmd.none
+            )
 
         EditTitle newTitle ->
             ( { model
-                  | draftNote = updateDraftTitle newTitle model.draftNote
+                | draftNote = updateDraftTitle newTitle model.draftNote
               }
             , Cmd.none
             )
 
         EditContent newContent ->
             ( { model
-                  | draftNote = updateDraftContent newContent model.draftNote
+                | draftNote = updateDraftContent newContent model.draftNote
               }
             , Cmd.none
             )
 
         EditCancel ->
             ( { model
-                  | draftNote = emptyDraftNote
-                  , state = NoteList
+                | draftNote = emptyDraftNote
+                , state = NoteList
               }
             , Cmd.none
             )
 
         EditSave id ->
             ( { model
-                  | draftNote = emptyDraftNote
-                  , state = NoteList
+                | draftNote = emptyDraftNote
+                , state = NoteList
               }
             , Http.request
                 { method = "PATCH"
@@ -197,12 +214,14 @@ update msg model =
                 , url = apiUrl ++ "/notes/" ++ String.fromInt id
                 , body =
                     Http.jsonBody
-                        ( E.object
-                              [ ( "note", E.object [ ("title", E.string model.draftNote.title)
-                                                   , ("content", E.string model.draftNote.content)
-                                                   ]
-                                )
-                              ]
+                        (E.object
+                            [ ( "note"
+                              , E.object
+                                    [ ( "title", E.string model.draftNote.title )
+                                    , ( "content", E.string model.draftNote.content )
+                                    ]
+                              )
+                            ]
                         )
                 , expect = Http.expectWhatever NoOp
                 , timeout = Nothing
@@ -302,15 +321,15 @@ viewNoteEdit : NoteId -> DraftNote -> Html Msg
 viewNoteEdit noteId draft =
     div [ class "col s12 m10 offset-m2" ]
         [ div [ class "row" ]
-              [ div [ class "input-field col s10 m8 offset-s1 offset-m1" ]
-                    [ input [ id "note-title", type_ "text", value draft.title, onInput EditTitle ] []
-                    , label [ for "note-title" ] [ text "Title" ]
-                    ]
-              , div [ class "input-field col s10 m8 offset-s1 offset-m1" ]
-                    [ textarea [ id "note-content", class "materialize-textarea", value draft.content, onInput EditContent ] []
-                    , label [ for "note-content" ] [ text "Content" ]
-                    ]
-              ]
+            [ div [ class "input-field col s10 m8 offset-s1 offset-m1" ]
+                [ input [ id "note-title", type_ "text", value draft.title, onInput EditTitle ] []
+                , label [ for "note-title" ] [ text "Title" ]
+                ]
+            , div [ class "input-field col s10 m8 offset-s1 offset-m1" ]
+                [ textarea [ id "note-content", class "materialize-textarea", value draft.content, onInput EditContent ] []
+                , label [ for "note-content" ] [ text "Content" ]
+                ]
+            ]
         , div [ class "row" ]
             [ div [ class "btn-flat btn-small waves-effect waves-light waves-grey right", onClick (EditSave noteId) ] [ text "Save" ]
             , div [ class "btn-flat btn-small waves-effect waves-light waves-grey right", onClick EditCancel ] [ text "Cancel" ]

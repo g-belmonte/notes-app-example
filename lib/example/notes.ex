@@ -68,6 +68,7 @@ defmodule Example.Notes do
 
   """
   def update_note(%Note{} = note, attrs) do
+    ExampleWeb.Endpoint.broadcast("notes:lobby", "update", %{content: attrs["content"], id: note.id, title: attrs["title"]})
     note
     |> Note.changeset(attrs)
     |> Repo.update()
