@@ -6,6 +6,8 @@ module Note exposing
     , notesDecoder
     , updateTitle
     , updateContent
+    , updateDraftTitle
+    , updateDraftContent
     )
 
 import Json.Decode exposing (Decoder, list, succeed, int, string)
@@ -46,6 +48,16 @@ updateTitle newTitle note =
 updateContent : String -> Note -> Note
 updateContent newContent note =
     { note | content = newContent }
+
+
+updateDraftTitle : String -> DraftNote -> DraftNote
+updateDraftTitle newTitle draftNote =
+    { draftNote | title = newTitle }
+
+
+updateDraftContent : String -> DraftNote -> DraftNote
+updateDraftContent newContent draftNote =
+    { draftNote | content = newContent }
 
 
 emptyDraftNote : DraftNote
