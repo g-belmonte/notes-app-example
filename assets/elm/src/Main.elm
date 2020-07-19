@@ -1,4 +1,8 @@
-module Main exposing (Model, init, Msg, update, view, subscriptions)
+module Main exposing
+    (Model, Msg
+    , init, update, view, subscriptions
+    )
+
 
 import Html exposing (..)
 import Html.Attributes exposing (class)
@@ -6,10 +10,13 @@ import Html.Events exposing (onClick)
 import Http
 import Browser
 import Browser.Navigation as Nav
-import Json.Decode exposing (field)
+import Json.Decode exposing (decodeValue, int, field)
 import Url
+import Socket
+import Channel
 
 import Note exposing (DraftNote, Note, emptyDraftNote, notesDecoder)
+import Ports.Phoenix as Phx
 
 apiUrl : String
 apiUrl =
@@ -54,6 +61,8 @@ loadNotes =
 
 type Msg
     = LoadNotes (Result Http.Error (List Note))
+    | SocketMsg Socket.EventIn
+    | ChannelMsg Channel.EventIn
     | DeleteNote Int
     | DeletedNote (Result Http.Error ())
     | UrlRequested Browser.UrlRequest
@@ -65,7 +74,7 @@ update msg model =
     case msg of
         LoadNotes (Ok notes) ->
             ( { model | notes = Just notes }
-            , Cmd.none
+            , Socket.send (Socket.Connect Nothing) Phx.sendMessage
             )
 
         -- to do: handle error
@@ -73,6 +82,44 @@ update msg model =
             ( model
             , Cmd.none
             )
+
+        SocketMsg Socket.Opened ->
+            ( model
+            , Channel.send
+                ( Channel.Join
+                      { topic = "notes:lobby"
+                      , timeout = Nothing
+                      , payload = Nothing
+                      }
+                )
+                Phx.sendMessage
+            )
+
+
+        ChannelMsg (Channel.JoinOk "notes:lobby" payload) ->
+            ( model
+            , Channel.eventsOn
+                (Just "notes:lobby")
+                [ "delete" ]
+                Phx.sendMessage
+            )
+
+
+        ChannelMsg (Channel.Message "notes:lobby" "delete" payload) ->
+            let
+                key = decodeValue (field "id" int) payload
+            in
+                case key of
+                    Ok id ->
+                        ( { model
+                              | notes = Maybe.map (List.filter (\x -> x.id /= id)) model.notes
+                          }
+                        , Cmd.none
+                        )
+
+
+                    Err _ ->
+                        ( model, Cmd.none )
 
 
         DeletedNote _ ->
@@ -109,10 +156,24 @@ update msg model =
             )
 
 
+        {- Catch Alls -}
+        SocketMsg _ ->
+            ( model, Cmd.none )
+
+        ChannelMsg _ ->
+            ( model, Cmd.none )
+
+
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
-
+    Sub.batch
+        [ Phx.socketReceiver
+            |> Socket.subscriptions
+                SocketMsg
+        , Phx.channelReceiver
+            |> Channel.subscriptions
+                ChannelMsg
+        ]
 
 view : Model -> Browser.Document Msg
 view model =

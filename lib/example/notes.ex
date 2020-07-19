@@ -86,6 +86,7 @@ defmodule Example.Notes do
 
   """
   def delete_note(%Note{} = note) do
+    ExampleWeb.Endpoint.broadcast("notes:lobby", "delete", %{id: note.id})
     Repo.delete(note)
   end
 

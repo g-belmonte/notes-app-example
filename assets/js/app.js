@@ -12,11 +12,14 @@ import "../css/app.scss"
 //     import {Socket} from "phoenix"
 //     import socket from "./socket"
 //
-import "phoenix_html"
+
 
 // Elm
 import { Elm } from "../elm/src/Main.elm"
+import ElmPhoenixWebSocket from "./elmPhoenixWebSocket"
 
 let app = Elm.Main.init({
   node: document.getElementById("app-node")
 })
+
+ElmPhoenixWebSocket.init(app.ports)
